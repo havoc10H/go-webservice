@@ -1,0 +1,34 @@
+FROM golang:1.20 as build_sales-api
+ENV CGO_ENABLED 0
+ARG BUILD_REF
+
+# Copy the source code into the container.
+COPY ./ /service
+
+# Build the admin binary.
+WORKDIR /service/app/tooling/admin
+RUN go build -ldflags "-X main.build=${BUILD_REF}"
+
+# Build the service binary.
+WORKDIR /service/app/services/sales-api
+RUN go build -ldflags "-X main.build=${BUILD_REF}"
+
+# Run the Go Binary in Alpine.
+FROM alpine:3.17
+ARG BUILD_DATE
+ARG BUILD_REF
+
+COPY --from=build_sales-api /service/zarf/keys/. /service/zarf/keys/.
+COPY --from=build_sales-api /service/app/tooling/admin/admin /service/admin
+COPY --from=build_sales-api /service/app/services/sales-api/sales-api /service/sales-api
+WORKDIR /service
+RUN ls -la
+
+CMD ["./sales-api"]
+
+LABEL org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.title="sales-api" \
+      org.opencontainers.image.authors="Alefew Yimer" \
+      org.opencontainers.image.source="https://github.com/aleale2121/go-web-service/app/sales-api" \
+      org.opencontainers.image.revision="${BUILD_REF}" \
+      org.opencontainers.image.vendor="Alefew Yimer"
