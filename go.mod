@@ -1,4 +1,4 @@
-module github.com/aleale2121/go-web-service
+module github.com/aleale2121/go-webservice
 
 go 1.20
 
